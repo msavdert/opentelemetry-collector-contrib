@@ -1249,6 +1249,94 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
+          - description: Whether a process is currently streaming from the replication slot, 1 if so and 0 otherwise. No data point is reported for a slot synchronized to a standby from a primary server.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: otel_slot
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.replication_slot.active
+            unit: "1"
+          - description: The amount of WAL retained by the replication slot, measured from the oldest WAL the slot needs to the current WAL position. No data point is reported for a slot that does not reserve WAL, or whose required WAL has already been lost.
+            gauge:
+              dataPoints:
+                - asInt: "469456"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: otel_slot
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.replication_slot.retained_wal
+            unit: By
+          - description: Availability of the WAL claimed by the replication slot, reported as a state set. The data point for the current status is 1 and the data points for the other statuses are 0. No data points are reported for a slot that does not reserve WAL, or whose status this receiver does not recognize.
+            name: postgresql.replication_slot.wal_status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: otel_slot
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: extended
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: otel_slot
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: lost
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: otel_slot
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: otel_slot
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: unreserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:

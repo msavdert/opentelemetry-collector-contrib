@@ -182,6 +182,655 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: postgresql.replication.data_delay
             unit: By
+          - description: Whether a process is currently streaming from the replication slot, 1 if so and 0 otherwise. No data point is reported for a slot synchronized to a standby from a primary server.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_lost
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_slot
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_active
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_fresh
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_future_status
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_idle
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_idle_timeout
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_lost
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.replication_slot.active
+            unit: "1"
+          - description: The time since the replication slot became inactive. No data point is reported while a process is streaming from the slot, or for a slot synchronized to a standby from a primary server.
+            gauge:
+              dataPoints:
+                - asDouble: 60
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_lost
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 120.5
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_idle
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 7200
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_idle_timeout
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 3600
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_lost
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.replication_slot.inactive_duration
+            unit: s
+          - description: Set to 1 for a replication slot that has been invalidated, with the reason as an attribute. No data point is reported for a slot that is still valid.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: postgresql.replication_slot.invalidation_reason
+                      value:
+                        stringValue: idle_timeout
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_idle_timeout
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: postgresql.replication_slot.invalidation_reason
+                      value:
+                        stringValue: wal_removed
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_lost
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: postgresql.replication_slot.invalidation_reason
+                      value:
+                        stringValue: wal_removed
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_lost
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.replication_slot.invalidated
+            unit: "1"
+          - description: The amount of WAL retained by the replication slot, measured from the oldest WAL the slot needs to the current WAL position. No data point is reported for a slot that does not reserve WAL, or whose required WAL has already been lost.
+            gauge:
+              dataPoints:
+                - asInt: "2048"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_slot
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "4096"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_synced
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1024"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_active
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "100"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_future_status
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "8192"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_idle
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.replication_slot.retained_wal
+            unit: By
+          - description: The amount of WAL that can still be written before the replication slot is at risk of losing required WAL. It can be negative while the slot is unreserved. No data point is reported when the server does not limit retained WAL, when the slot has already lost WAL, or when the slot does not reserve WAL.
+            gauge:
+              dataPoints:
+                - asInt: "4096"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_slot
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "8192"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_synced
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "67108864"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_active
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.replication_slot.safe_wal_size
+            unit: By
+          - description: The amount of WAL generated since the consumer of a logical replication slot last confirmed it had received changes. No data point is reported for physical slots or for a slot whose required WAL has been lost.
+            gauge:
+              dataPoints:
+                - asInt: "512"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_slot
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.replication_slot.unconfirmed_wal
+            unit: By
+          - description: Availability of the WAL claimed by the replication slot, reported as a state set. The data point for the current status is 1 and the data points for the other statuses are 0. No data points are reported for a slot that does not reserve WAL, or whose status this receiver does not recognize.
+            name: postgresql.replication_slot.wal_status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_lost
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: extended
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_lost
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: lost
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_lost
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_lost
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: unreserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_slot
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: extended
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_slot
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: lost
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_slot
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_slot
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: unreserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_synced
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: extended
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_synced
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: lost
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_synced
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: logical_synced
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: logical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: unreserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_active
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: extended
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_active
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: lost
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_active
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_active
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: unreserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_idle
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: extended
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_idle
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: lost
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_idle
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_idle
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: unreserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_idle_timeout
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: extended
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_idle_timeout
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: lost
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_idle_timeout
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_idle_timeout
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: unreserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_lost
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: extended
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_lost
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: lost
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_lost
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: postgresql.replication_slot.name
+                      value:
+                        stringValue: phys_lost
+                    - key: postgresql.replication_slot.type
+                      value:
+                        stringValue: physical
+                    - key: postgresql.replication_slot.wal_status
+                      value:
+                        stringValue: unreserved
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
           - description: Age of the oldest WAL file.
             gauge:
               dataPoints:

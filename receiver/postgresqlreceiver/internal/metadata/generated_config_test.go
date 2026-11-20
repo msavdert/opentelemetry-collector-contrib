@@ -129,6 +129,41 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []PostgresqlReplicationDataDelayMetricAttributeKey{PostgresqlReplicationDataDelayMetricAttributeKeyReplicationClient},
 					},
+					PostgresqlReplicationSlotActive: PostgresqlReplicationSlotActiveMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlReplicationSlotActiveMetricAttributeKey{PostgresqlReplicationSlotActiveMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotActiveMetricAttributeKeyPostgresqlReplicationSlotType},
+					},
+					PostgresqlReplicationSlotInactiveDuration: PostgresqlReplicationSlotInactiveDurationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlReplicationSlotInactiveDurationMetricAttributeKey{PostgresqlReplicationSlotInactiveDurationMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotInactiveDurationMetricAttributeKeyPostgresqlReplicationSlotType},
+					},
+					PostgresqlReplicationSlotInvalidated: PostgresqlReplicationSlotInvalidatedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlReplicationSlotInvalidatedMetricAttributeKey{PostgresqlReplicationSlotInvalidatedMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotInvalidatedMetricAttributeKeyPostgresqlReplicationSlotType, PostgresqlReplicationSlotInvalidatedMetricAttributeKeyPostgresqlReplicationSlotInvalidationReason},
+					},
+					PostgresqlReplicationSlotRetainedWal: PostgresqlReplicationSlotRetainedWalMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlReplicationSlotRetainedWalMetricAttributeKey{PostgresqlReplicationSlotRetainedWalMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotRetainedWalMetricAttributeKeyPostgresqlReplicationSlotType},
+					},
+					PostgresqlReplicationSlotSafeWalSize: PostgresqlReplicationSlotSafeWalSizeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlReplicationSlotSafeWalSizeMetricAttributeKey{PostgresqlReplicationSlotSafeWalSizeMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotSafeWalSizeMetricAttributeKeyPostgresqlReplicationSlotType},
+					},
+					PostgresqlReplicationSlotUnconfirmedWal: PostgresqlReplicationSlotUnconfirmedWalMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlReplicationSlotUnconfirmedWalMetricAttributeKey{PostgresqlReplicationSlotUnconfirmedWalMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotUnconfirmedWalMetricAttributeKeyPostgresqlReplicationSlotType},
+					},
+					PostgresqlReplicationSlotWalStatus: PostgresqlReplicationSlotWalStatusMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlReplicationSlotWalStatusMetricAttributeKey{PostgresqlReplicationSlotWalStatusMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotWalStatusMetricAttributeKeyPostgresqlReplicationSlotType, PostgresqlReplicationSlotWalStatusMetricAttributeKeyPostgresqlReplicationSlotWalStatus},
+					},
 					PostgresqlRollbacks: PostgresqlRollbacksMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -353,6 +388,41 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []PostgresqlReplicationDataDelayMetricAttributeKey{PostgresqlReplicationDataDelayMetricAttributeKeyReplicationClient},
 					},
+					PostgresqlReplicationSlotActive: PostgresqlReplicationSlotActiveMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlReplicationSlotActiveMetricAttributeKey{PostgresqlReplicationSlotActiveMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotActiveMetricAttributeKeyPostgresqlReplicationSlotType},
+					},
+					PostgresqlReplicationSlotInactiveDuration: PostgresqlReplicationSlotInactiveDurationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlReplicationSlotInactiveDurationMetricAttributeKey{PostgresqlReplicationSlotInactiveDurationMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotInactiveDurationMetricAttributeKeyPostgresqlReplicationSlotType},
+					},
+					PostgresqlReplicationSlotInvalidated: PostgresqlReplicationSlotInvalidatedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlReplicationSlotInvalidatedMetricAttributeKey{PostgresqlReplicationSlotInvalidatedMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotInvalidatedMetricAttributeKeyPostgresqlReplicationSlotType, PostgresqlReplicationSlotInvalidatedMetricAttributeKeyPostgresqlReplicationSlotInvalidationReason},
+					},
+					PostgresqlReplicationSlotRetainedWal: PostgresqlReplicationSlotRetainedWalMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlReplicationSlotRetainedWalMetricAttributeKey{PostgresqlReplicationSlotRetainedWalMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotRetainedWalMetricAttributeKeyPostgresqlReplicationSlotType},
+					},
+					PostgresqlReplicationSlotSafeWalSize: PostgresqlReplicationSlotSafeWalSizeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlReplicationSlotSafeWalSizeMetricAttributeKey{PostgresqlReplicationSlotSafeWalSizeMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotSafeWalSizeMetricAttributeKeyPostgresqlReplicationSlotType},
+					},
+					PostgresqlReplicationSlotUnconfirmedWal: PostgresqlReplicationSlotUnconfirmedWalMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlReplicationSlotUnconfirmedWalMetricAttributeKey{PostgresqlReplicationSlotUnconfirmedWalMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotUnconfirmedWalMetricAttributeKeyPostgresqlReplicationSlotType},
+					},
+					PostgresqlReplicationSlotWalStatus: PostgresqlReplicationSlotWalStatusMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlReplicationSlotWalStatusMetricAttributeKey{PostgresqlReplicationSlotWalStatusMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotWalStatusMetricAttributeKeyPostgresqlReplicationSlotType, PostgresqlReplicationSlotWalStatusMetricAttributeKeyPostgresqlReplicationSlotWalStatus},
+					},
 					PostgresqlRollbacks: PostgresqlRollbacksMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
@@ -475,7 +545,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(PostgresqlBackendsMetricConfig{}, PostgresqlBgwriterBuffersAllocatedMetricConfig{}, PostgresqlBgwriterBuffersWritesMetricConfig{}, PostgresqlBgwriterCheckpointCountMetricConfig{}, PostgresqlBgwriterDurationMetricConfig{}, PostgresqlBgwriterMaxwrittenMetricConfig{}, PostgresqlBlksHitMetricConfig{}, PostgresqlBlksReadMetricConfig{}, PostgresqlBlocksReadMetricConfig{}, PostgresqlCommitsMetricConfig{}, PostgresqlConnectionMaxMetricConfig{}, PostgresqlDatabaseCountMetricConfig{}, PostgresqlDatabaseLocksMetricConfig{}, PostgresqlDbSizeMetricConfig{}, PostgresqlDeadlocksMetricConfig{}, PostgresqlFunctionCallsMetricConfig{}, PostgresqlIndexScansMetricConfig{}, PostgresqlIndexSizeMetricConfig{}, PostgresqlOperationsMetricConfig{}, PostgresqlQueryConflictsMetricConfig{}, PostgresqlQueryExecutionTimeMetricConfig{}, PostgresqlReplicationDataDelayMetricConfig{}, PostgresqlRollbacksMetricConfig{}, PostgresqlRowsMetricConfig{}, PostgresqlSequentialScansMetricConfig{}, PostgresqlTableCountMetricConfig{}, PostgresqlTableSizeMetricConfig{}, PostgresqlTableVacuumCountMetricConfig{}, PostgresqlTempIoMetricConfig{}, PostgresqlTempFilesMetricConfig{}, PostgresqlTupDeletedMetricConfig{}, PostgresqlTupFetchedMetricConfig{}, PostgresqlTupInsertedMetricConfig{}, PostgresqlTupReturnedMetricConfig{}, PostgresqlTupUpdatedMetricConfig{}, PostgresqlVectorInsertDurationMetricConfig{}, PostgresqlVectorInsertRowsMetricConfig{}, PostgresqlVectorSearchCallsMetricConfig{}, PostgresqlVectorSearchDurationMetricConfig{}, PostgresqlVectorSearchRowsReturnedMetricConfig{}, PostgresqlWalAgeMetricConfig{}, PostgresqlWalDelayMetricConfig{}, PostgresqlWalLagMetricConfig{}, DbSystemVersionResourceAttributeConfig{}, PostgresqlDatabaseNameResourceAttributeConfig{}, PostgresqlIndexNameResourceAttributeConfig{}, PostgresqlSchemaNameResourceAttributeConfig{}, PostgresqlTableNameResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(PostgresqlBackendsMetricConfig{}, PostgresqlBgwriterBuffersAllocatedMetricConfig{}, PostgresqlBgwriterBuffersWritesMetricConfig{}, PostgresqlBgwriterCheckpointCountMetricConfig{}, PostgresqlBgwriterDurationMetricConfig{}, PostgresqlBgwriterMaxwrittenMetricConfig{}, PostgresqlBlksHitMetricConfig{}, PostgresqlBlksReadMetricConfig{}, PostgresqlBlocksReadMetricConfig{}, PostgresqlCommitsMetricConfig{}, PostgresqlConnectionMaxMetricConfig{}, PostgresqlDatabaseCountMetricConfig{}, PostgresqlDatabaseLocksMetricConfig{}, PostgresqlDbSizeMetricConfig{}, PostgresqlDeadlocksMetricConfig{}, PostgresqlFunctionCallsMetricConfig{}, PostgresqlIndexScansMetricConfig{}, PostgresqlIndexSizeMetricConfig{}, PostgresqlOperationsMetricConfig{}, PostgresqlQueryConflictsMetricConfig{}, PostgresqlQueryExecutionTimeMetricConfig{}, PostgresqlReplicationDataDelayMetricConfig{}, PostgresqlReplicationSlotActiveMetricConfig{}, PostgresqlReplicationSlotInactiveDurationMetricConfig{}, PostgresqlReplicationSlotInvalidatedMetricConfig{}, PostgresqlReplicationSlotRetainedWalMetricConfig{}, PostgresqlReplicationSlotSafeWalSizeMetricConfig{}, PostgresqlReplicationSlotUnconfirmedWalMetricConfig{}, PostgresqlReplicationSlotWalStatusMetricConfig{}, PostgresqlRollbacksMetricConfig{}, PostgresqlRowsMetricConfig{}, PostgresqlSequentialScansMetricConfig{}, PostgresqlTableCountMetricConfig{}, PostgresqlTableSizeMetricConfig{}, PostgresqlTableVacuumCountMetricConfig{}, PostgresqlTempIoMetricConfig{}, PostgresqlTempFilesMetricConfig{}, PostgresqlTupDeletedMetricConfig{}, PostgresqlTupFetchedMetricConfig{}, PostgresqlTupInsertedMetricConfig{}, PostgresqlTupReturnedMetricConfig{}, PostgresqlTupUpdatedMetricConfig{}, PostgresqlVectorInsertDurationMetricConfig{}, PostgresqlVectorInsertRowsMetricConfig{}, PostgresqlVectorSearchCallsMetricConfig{}, PostgresqlVectorSearchDurationMetricConfig{}, PostgresqlVectorSearchRowsReturnedMetricConfig{}, PostgresqlWalAgeMetricConfig{}, PostgresqlWalDelayMetricConfig{}, PostgresqlWalLagMetricConfig{}, DbSystemVersionResourceAttributeConfig{}, PostgresqlDatabaseNameResourceAttributeConfig{}, PostgresqlIndexNameResourceAttributeConfig{}, PostgresqlSchemaNameResourceAttributeConfig{}, PostgresqlTableNameResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -692,6 +762,90 @@ func TestPostgresqlReplicationDataDelayMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric postgresql.replication.data_delay doesn't have an attribute invalid, valid attributes: [replication_client]")
 
 	cfg = DefaultMetricsConfig().PostgresqlReplicationDataDelay
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlReplicationSlotActiveMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlReplicationSlotActive
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlReplicationSlotActiveMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.replication_slot.active doesn't have an attribute invalid, valid attributes: [postgresql.replication_slot.name, postgresql.replication_slot.type]")
+
+	cfg = DefaultMetricsConfig().PostgresqlReplicationSlotActive
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlReplicationSlotInactiveDurationMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlReplicationSlotInactiveDuration
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlReplicationSlotInactiveDurationMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.replication_slot.inactive_duration doesn't have an attribute invalid, valid attributes: [postgresql.replication_slot.name, postgresql.replication_slot.type]")
+
+	cfg = DefaultMetricsConfig().PostgresqlReplicationSlotInactiveDuration
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlReplicationSlotInvalidatedMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlReplicationSlotInvalidated
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlReplicationSlotInvalidatedMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.replication_slot.invalidated doesn't have an attribute invalid, valid attributes: [postgresql.replication_slot.name, postgresql.replication_slot.type, postgresql.replication_slot.invalidation_reason]")
+
+	cfg = DefaultMetricsConfig().PostgresqlReplicationSlotInvalidated
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlReplicationSlotRetainedWalMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlReplicationSlotRetainedWal
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlReplicationSlotRetainedWalMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.replication_slot.retained_wal doesn't have an attribute invalid, valid attributes: [postgresql.replication_slot.name, postgresql.replication_slot.type]")
+
+	cfg = DefaultMetricsConfig().PostgresqlReplicationSlotRetainedWal
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlReplicationSlotSafeWalSizeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlReplicationSlotSafeWalSize
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlReplicationSlotSafeWalSizeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.replication_slot.safe_wal_size doesn't have an attribute invalid, valid attributes: [postgresql.replication_slot.name, postgresql.replication_slot.type]")
+
+	cfg = DefaultMetricsConfig().PostgresqlReplicationSlotSafeWalSize
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlReplicationSlotUnconfirmedWalMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlReplicationSlotUnconfirmedWal
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlReplicationSlotUnconfirmedWalMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.replication_slot.unconfirmed_wal doesn't have an attribute invalid, valid attributes: [postgresql.replication_slot.name, postgresql.replication_slot.type]")
+
+	cfg = DefaultMetricsConfig().PostgresqlReplicationSlotUnconfirmedWal
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlReplicationSlotWalStatusMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlReplicationSlotWalStatus
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlReplicationSlotWalStatusMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.replication_slot.wal_status doesn't have an attribute invalid, valid attributes: [postgresql.replication_slot.name, postgresql.replication_slot.type, postgresql.replication_slot.wal_status]")
+
+	cfg = DefaultMetricsConfig().PostgresqlReplicationSlotWalStatus
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }

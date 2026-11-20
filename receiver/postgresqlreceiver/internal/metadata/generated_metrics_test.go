@@ -85,6 +85,13 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["postgresql.query.conflicts"] = mb.metricPostgresqlQueryConflicts.config.AggregationStrategy
 			aggMap["postgresql.query.execution.time"] = mb.metricPostgresqlQueryExecutionTime.config.AggregationStrategy
 			aggMap["postgresql.replication.data_delay"] = mb.metricPostgresqlReplicationDataDelay.config.AggregationStrategy
+			aggMap["postgresql.replication_slot.active"] = mb.metricPostgresqlReplicationSlotActive.config.AggregationStrategy
+			aggMap["postgresql.replication_slot.inactive_duration"] = mb.metricPostgresqlReplicationSlotInactiveDuration.config.AggregationStrategy
+			aggMap["postgresql.replication_slot.invalidated"] = mb.metricPostgresqlReplicationSlotInvalidated.config.AggregationStrategy
+			aggMap["postgresql.replication_slot.retained_wal"] = mb.metricPostgresqlReplicationSlotRetainedWal.config.AggregationStrategy
+			aggMap["postgresql.replication_slot.safe_wal_size"] = mb.metricPostgresqlReplicationSlotSafeWalSize.config.AggregationStrategy
+			aggMap["postgresql.replication_slot.unconfirmed_wal"] = mb.metricPostgresqlReplicationSlotUnconfirmedWal.config.AggregationStrategy
+			aggMap["postgresql.replication_slot.wal_status"] = mb.metricPostgresqlReplicationSlotWalStatus.config.AggregationStrategy
 			aggMap["postgresql.rollbacks"] = mb.metricPostgresqlRollbacks.config.AggregationStrategy
 			aggMap["postgresql.rows"] = mb.metricPostgresqlRows.config.AggregationStrategy
 			aggMap["postgresql.sequential_scans"] = mb.metricPostgresqlSequentialScans.config.AggregationStrategy
@@ -286,6 +293,69 @@ func TestMetricsBuilder(t *testing.T) {
 				// a different timestamp is a different key: must not merge with the above.
 				mb.RecordPostgresqlReplicationDataDelayDataPoint(ts+1, 3, "replication_client-val-2")
 				assert.Equal(t, 2, mb.metricPostgresqlReplicationDataDelay.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlReplicationSlotActiveDataPoint(ts, 1, "postgresql.replication_slot.name-val", AttributePostgresqlReplicationSlotTypePhysical)
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlReplicationSlotActiveDataPoint(ts, 3, "postgresql.replication_slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlReplicationSlotActiveDataPoint(ts+1, 3, "postgresql.replication_slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical)
+				assert.Equal(t, 2, mb.metricPostgresqlReplicationSlotActive.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlReplicationSlotInactiveDurationDataPoint(ts, 1, "postgresql.replication_slot.name-val", AttributePostgresqlReplicationSlotTypePhysical)
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlReplicationSlotInactiveDurationDataPoint(ts, 3, "postgresql.replication_slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlReplicationSlotInactiveDurationDataPoint(ts+1, 3, "postgresql.replication_slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical)
+				assert.Equal(t, 2, mb.metricPostgresqlReplicationSlotInactiveDuration.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlReplicationSlotInvalidatedDataPoint(ts, 1, "postgresql.replication_slot.name-val", AttributePostgresqlReplicationSlotTypePhysical, "postgresql.replication_slot.invalidation_reason-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlReplicationSlotInvalidatedDataPoint(ts, 3, "postgresql.replication_slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical, "postgresql.replication_slot.invalidation_reason-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlReplicationSlotInvalidatedDataPoint(ts+1, 3, "postgresql.replication_slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical, "postgresql.replication_slot.invalidation_reason-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlReplicationSlotInvalidated.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlReplicationSlotRetainedWalDataPoint(ts, 1, "postgresql.replication_slot.name-val", AttributePostgresqlReplicationSlotTypePhysical)
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlReplicationSlotRetainedWalDataPoint(ts, 3, "postgresql.replication_slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlReplicationSlotRetainedWalDataPoint(ts+1, 3, "postgresql.replication_slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical)
+				assert.Equal(t, 2, mb.metricPostgresqlReplicationSlotRetainedWal.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlReplicationSlotSafeWalSizeDataPoint(ts, 1, "postgresql.replication_slot.name-val", AttributePostgresqlReplicationSlotTypePhysical)
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlReplicationSlotSafeWalSizeDataPoint(ts, 3, "postgresql.replication_slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlReplicationSlotSafeWalSizeDataPoint(ts+1, 3, "postgresql.replication_slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical)
+				assert.Equal(t, 2, mb.metricPostgresqlReplicationSlotSafeWalSize.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlReplicationSlotUnconfirmedWalDataPoint(ts, 1, "postgresql.replication_slot.name-val", AttributePostgresqlReplicationSlotTypePhysical)
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlReplicationSlotUnconfirmedWalDataPoint(ts, 3, "postgresql.replication_slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlReplicationSlotUnconfirmedWalDataPoint(ts+1, 3, "postgresql.replication_slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical)
+				assert.Equal(t, 2, mb.metricPostgresqlReplicationSlotUnconfirmedWal.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlReplicationSlotWalStatusDataPoint(ts, 1, "postgresql.replication_slot.name-val", AttributePostgresqlReplicationSlotTypePhysical, AttributePostgresqlReplicationSlotWalStatusReserved)
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlReplicationSlotWalStatusDataPoint(ts, 3, "postgresql.replication_slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical, AttributePostgresqlReplicationSlotWalStatusExtended)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlReplicationSlotWalStatusDataPoint(ts+1, 3, "postgresql.replication_slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical, AttributePostgresqlReplicationSlotWalStatusExtended)
+				assert.Equal(t, 2, mb.metricPostgresqlReplicationSlotWalStatus.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -503,6 +573,13 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricPostgresqlQueryConflicts.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlQueryExecutionTime.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlReplicationDataDelay.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlReplicationSlotActive.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlReplicationSlotInactiveDuration.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlReplicationSlotInvalidated.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlReplicationSlotRetainedWal.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlReplicationSlotSafeWalSize.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlReplicationSlotUnconfirmedWal.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlReplicationSlotWalStatus.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlRollbacks.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlRows.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlSequentialScans.aggDataPoints)
@@ -1483,6 +1560,349 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("replication_client")
+						assert.False(t, ok)
+					}
+				case "postgresql.replication_slot.active":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.active"], "Found a duplicate in the metrics slice: postgresql.replication_slot.active")
+						validatedMetrics["postgresql.replication_slot.active"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Whether a process is currently streaming from the replication slot, 1 if so and 0 otherwise. No data point is reported for a slot synchronized to a standby from a primary server.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						postgresqlReplicationSlotNameAttrVal, ok := dp.Attributes().Get("postgresql.replication_slot.name")
+						assert.True(t, ok)
+						assert.Equal(t, "postgresql.replication_slot.name-val", postgresqlReplicationSlotNameAttrVal.Str())
+						postgresqlReplicationSlotTypeAttrVal, ok := dp.Attributes().Get("postgresql.replication_slot.type")
+						assert.True(t, ok)
+						assert.Equal(t, "physical", postgresqlReplicationSlotTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.active"], "Found a duplicate in the metrics slice: postgresql.replication_slot.active")
+						validatedMetrics["postgresql.replication_slot.active"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Whether a process is currently streaming from the replication slot, 1 if so and 0 otherwise. No data point is reported for a slot synchronized to a standby from a primary server.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.replication_slot.active"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("postgresql.replication_slot.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("postgresql.replication_slot.type")
+						assert.False(t, ok)
+					}
+				case "postgresql.replication_slot.inactive_duration":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.inactive_duration"], "Found a duplicate in the metrics slice: postgresql.replication_slot.inactive_duration")
+						validatedMetrics["postgresql.replication_slot.inactive_duration"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The time since the replication slot became inactive. No data point is reported while a process is streaming from the slot, or for a slot synchronized to a standby from a primary server.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						postgresqlReplicationSlotNameAttrVal, ok := dp.Attributes().Get("postgresql.replication_slot.name")
+						assert.True(t, ok)
+						assert.Equal(t, "postgresql.replication_slot.name-val", postgresqlReplicationSlotNameAttrVal.Str())
+						postgresqlReplicationSlotTypeAttrVal, ok := dp.Attributes().Get("postgresql.replication_slot.type")
+						assert.True(t, ok)
+						assert.Equal(t, "physical", postgresqlReplicationSlotTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.inactive_duration"], "Found a duplicate in the metrics slice: postgresql.replication_slot.inactive_duration")
+						validatedMetrics["postgresql.replication_slot.inactive_duration"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "The time since the replication slot became inactive. No data point is reported while a process is streaming from the slot, or for a slot synchronized to a standby from a primary server.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["postgresql.replication_slot.inactive_duration"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("postgresql.replication_slot.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("postgresql.replication_slot.type")
+						assert.False(t, ok)
+					}
+				case "postgresql.replication_slot.invalidated":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.invalidated"], "Found a duplicate in the metrics slice: postgresql.replication_slot.invalidated")
+						validatedMetrics["postgresql.replication_slot.invalidated"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Set to 1 for a replication slot that has been invalidated, with the reason as an attribute. No data point is reported for a slot that is still valid.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						postgresqlReplicationSlotNameAttrVal, ok := dp.Attributes().Get("postgresql.replication_slot.name")
+						assert.True(t, ok)
+						assert.Equal(t, "postgresql.replication_slot.name-val", postgresqlReplicationSlotNameAttrVal.Str())
+						postgresqlReplicationSlotTypeAttrVal, ok := dp.Attributes().Get("postgresql.replication_slot.type")
+						assert.True(t, ok)
+						assert.Equal(t, "physical", postgresqlReplicationSlotTypeAttrVal.Str())
+						postgresqlReplicationSlotInvalidationReasonAttrVal, ok := dp.Attributes().Get("postgresql.replication_slot.invalidation_reason")
+						assert.True(t, ok)
+						assert.Equal(t, "postgresql.replication_slot.invalidation_reason-val", postgresqlReplicationSlotInvalidationReasonAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.invalidated"], "Found a duplicate in the metrics slice: postgresql.replication_slot.invalidated")
+						validatedMetrics["postgresql.replication_slot.invalidated"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Set to 1 for a replication slot that has been invalidated, with the reason as an attribute. No data point is reported for a slot that is still valid.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.replication_slot.invalidated"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("postgresql.replication_slot.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("postgresql.replication_slot.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("postgresql.replication_slot.invalidation_reason")
+						assert.False(t, ok)
+					}
+				case "postgresql.replication_slot.retained_wal":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.retained_wal"], "Found a duplicate in the metrics slice: postgresql.replication_slot.retained_wal")
+						validatedMetrics["postgresql.replication_slot.retained_wal"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The amount of WAL retained by the replication slot, measured from the oldest WAL the slot needs to the current WAL position. No data point is reported for a slot that does not reserve WAL, or whose required WAL has already been lost.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						postgresqlReplicationSlotNameAttrVal, ok := dp.Attributes().Get("postgresql.replication_slot.name")
+						assert.True(t, ok)
+						assert.Equal(t, "postgresql.replication_slot.name-val", postgresqlReplicationSlotNameAttrVal.Str())
+						postgresqlReplicationSlotTypeAttrVal, ok := dp.Attributes().Get("postgresql.replication_slot.type")
+						assert.True(t, ok)
+						assert.Equal(t, "physical", postgresqlReplicationSlotTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.retained_wal"], "Found a duplicate in the metrics slice: postgresql.replication_slot.retained_wal")
+						validatedMetrics["postgresql.replication_slot.retained_wal"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "The amount of WAL retained by the replication slot, measured from the oldest WAL the slot needs to the current WAL position. No data point is reported for a slot that does not reserve WAL, or whose required WAL has already been lost.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.replication_slot.retained_wal"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("postgresql.replication_slot.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("postgresql.replication_slot.type")
+						assert.False(t, ok)
+					}
+				case "postgresql.replication_slot.safe_wal_size":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.safe_wal_size"], "Found a duplicate in the metrics slice: postgresql.replication_slot.safe_wal_size")
+						validatedMetrics["postgresql.replication_slot.safe_wal_size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The amount of WAL that can still be written before the replication slot is at risk of losing required WAL. It can be negative while the slot is unreserved. No data point is reported when the server does not limit retained WAL, when the slot has already lost WAL, or when the slot does not reserve WAL.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						postgresqlReplicationSlotNameAttrVal, ok := dp.Attributes().Get("postgresql.replication_slot.name")
+						assert.True(t, ok)
+						assert.Equal(t, "postgresql.replication_slot.name-val", postgresqlReplicationSlotNameAttrVal.Str())
+						postgresqlReplicationSlotTypeAttrVal, ok := dp.Attributes().Get("postgresql.replication_slot.type")
+						assert.True(t, ok)
+						assert.Equal(t, "physical", postgresqlReplicationSlotTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.safe_wal_size"], "Found a duplicate in the metrics slice: postgresql.replication_slot.safe_wal_size")
+						validatedMetrics["postgresql.replication_slot.safe_wal_size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "The amount of WAL that can still be written before the replication slot is at risk of losing required WAL. It can be negative while the slot is unreserved. No data point is reported when the server does not limit retained WAL, when the slot has already lost WAL, or when the slot does not reserve WAL.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.replication_slot.safe_wal_size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("postgresql.replication_slot.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("postgresql.replication_slot.type")
+						assert.False(t, ok)
+					}
+				case "postgresql.replication_slot.unconfirmed_wal":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.unconfirmed_wal"], "Found a duplicate in the metrics slice: postgresql.replication_slot.unconfirmed_wal")
+						validatedMetrics["postgresql.replication_slot.unconfirmed_wal"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The amount of WAL generated since the consumer of a logical replication slot last confirmed it had received changes. No data point is reported for physical slots or for a slot whose required WAL has been lost.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						postgresqlReplicationSlotNameAttrVal, ok := dp.Attributes().Get("postgresql.replication_slot.name")
+						assert.True(t, ok)
+						assert.Equal(t, "postgresql.replication_slot.name-val", postgresqlReplicationSlotNameAttrVal.Str())
+						postgresqlReplicationSlotTypeAttrVal, ok := dp.Attributes().Get("postgresql.replication_slot.type")
+						assert.True(t, ok)
+						assert.Equal(t, "physical", postgresqlReplicationSlotTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.unconfirmed_wal"], "Found a duplicate in the metrics slice: postgresql.replication_slot.unconfirmed_wal")
+						validatedMetrics["postgresql.replication_slot.unconfirmed_wal"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "The amount of WAL generated since the consumer of a logical replication slot last confirmed it had received changes. No data point is reported for physical slots or for a slot whose required WAL has been lost.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.replication_slot.unconfirmed_wal"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("postgresql.replication_slot.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("postgresql.replication_slot.type")
+						assert.False(t, ok)
+					}
+				case "postgresql.replication_slot.wal_status":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.wal_status"], "Found a duplicate in the metrics slice: postgresql.replication_slot.wal_status")
+						validatedMetrics["postgresql.replication_slot.wal_status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Availability of the WAL claimed by the replication slot, reported as a state set. The data point for the current status is 1 and the data points for the other statuses are 0. No data points are reported for a slot that does not reserve WAL, or whose status this receiver does not recognize.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						postgresqlReplicationSlotNameAttrVal, ok := dp.Attributes().Get("postgresql.replication_slot.name")
+						assert.True(t, ok)
+						assert.Equal(t, "postgresql.replication_slot.name-val", postgresqlReplicationSlotNameAttrVal.Str())
+						postgresqlReplicationSlotTypeAttrVal, ok := dp.Attributes().Get("postgresql.replication_slot.type")
+						assert.True(t, ok)
+						assert.Equal(t, "physical", postgresqlReplicationSlotTypeAttrVal.Str())
+						postgresqlReplicationSlotWalStatusAttrVal, ok := dp.Attributes().Get("postgresql.replication_slot.wal_status")
+						assert.True(t, ok)
+						assert.Equal(t, "reserved", postgresqlReplicationSlotWalStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.wal_status"], "Found a duplicate in the metrics slice: postgresql.replication_slot.wal_status")
+						validatedMetrics["postgresql.replication_slot.wal_status"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Availability of the WAL claimed by the replication slot, reported as a state set. The data point for the current status is 1 and the data points for the other statuses are 0. No data points are reported for a slot that does not reserve WAL, or whose status this receiver does not recognize.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.replication_slot.wal_status"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("postgresql.replication_slot.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("postgresql.replication_slot.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("postgresql.replication_slot.wal_status")
 						assert.False(t, ok)
 					}
 				case "postgresql.rollbacks":

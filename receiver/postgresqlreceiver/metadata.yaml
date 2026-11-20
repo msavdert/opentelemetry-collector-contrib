@@ -226,6 +226,24 @@ attributes:
   postgresql.queryid:
     description: Hash code to identify identical normalized queries.
     type: string
+  postgresql.replication_slot.invalidation_reason:
+    description: The reason the replication slot was invalidated.
+    type: string
+    requirement_level: recommended
+  postgresql.replication_slot.name:
+    description: The name of the replication slot.
+    type: string
+    requirement_level: recommended
+  postgresql.replication_slot.type:
+    description: The type of the replication slot.
+    type: string
+    enum: [physical, logical]
+    requirement_level: recommended
+  postgresql.replication_slot.wal_status:
+    description: The availability of the WAL files claimed by the replication slot.
+    type: string
+    enum: [reserved, extended, unreserved, lost]
+    requirement_level: recommended
   postgresql.rolname:
     description: The name of the PostgreSQL role that executed the query.
     type: string
@@ -580,6 +598,71 @@ metrics:
     gauge:
       value_type: int
     unit: By
+  postgresql.replication_slot.active:
+    attributes: [postgresql.replication_slot.name, postgresql.replication_slot.type]
+    description: Whether a process is currently streaming from the replication slot, 1 if so and 0 otherwise. No data point is reported for a slot synchronized to a standby from a primary server.
+    stability: development
+    enabled: false
+    unit: "1"
+    gauge:
+      value_type: int
+    extended_documentation: |
+      A slot synchronized to a standby (PostgreSQL 17 or later) is never streamed from there, so it is skipped while the server is a standby. After the standby is promoted the slot is reported again.
+  postgresql.replication_slot.inactive_duration:
+    attributes: [postgresql.replication_slot.name, postgresql.replication_slot.type]
+    description: The time since the replication slot became inactive. No data point is reported while a process is streaming from the slot, or for a slot synchronized to a standby from a primary server.
+    stability: development
+    enabled: false
+    unit: "s"
+    gauge:
+      value_type: double
+    extended_documentation: |
+      Requires PostgreSQL 17 or later. A slot synchronized to a standby is skipped, because
+      its inactive time restarts at every synchronization.
+  postgresql.replication_slot.invalidated:
+    attributes: [postgresql.replication_slot.name, postgresql.replication_slot.type, postgresql.replication_slot.invalidation_reason]
+    description: Set to 1 for a replication slot that has been invalidated, with the reason as an attribute. No data point is reported for a slot that is still valid.
+    stability: development
+    enabled: false
+    unit: "1"
+    gauge:
+      value_type: int
+    extended_documentation: |
+      Requires PostgreSQL 17 or later.
+  postgresql.replication_slot.retained_wal:
+    attributes: [postgresql.replication_slot.name, postgresql.replication_slot.type]
+    description: The amount of WAL retained by the replication slot, measured from the oldest WAL the slot needs to the current WAL position. No data point is reported for a slot that does not reserve WAL, or whose required WAL has already been lost.
+    stability: development
+    enabled: false
+    unit: "By"
+    gauge:
+      value_type: int
+  postgresql.replication_slot.safe_wal_size:
+    attributes: [postgresql.replication_slot.name, postgresql.replication_slot.type]
+    description: The amount of WAL that can still be written before the replication slot is at risk of losing required WAL. It can be negative while the slot is unreserved. No data point is reported when the server does not limit retained WAL, when the slot has already lost WAL, or when the slot does not reserve WAL.
+    stability: development
+    enabled: false
+    unit: "By"
+    gauge:
+      value_type: int
+  postgresql.replication_slot.unconfirmed_wal:
+    attributes: [postgresql.replication_slot.name, postgresql.replication_slot.type]
+    description: The amount of WAL generated since the consumer of a logical replication slot last confirmed it had received changes. No data point is reported for physical slots or for a slot whose required WAL has been lost.
+    stability: development
+    enabled: false
+    unit: "By"
+    gauge:
+      value_type: int
+  postgresql.replication_slot.wal_status:
+    attributes: [postgresql.replication_slot.name, postgresql.replication_slot.type, postgresql.replication_slot.wal_status]
+    description: Availability of the WAL claimed by the replication slot, reported as a state set. The data point for the current status is 1 and the data points for the other statuses are 0. No data points are reported for a slot that does not reserve WAL, or whose status this receiver does not recognize.
+    stability: development
+    enabled: false
+    unit: "1"
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
   postgresql.rollbacks:
     enabled: true
     description: The number of rollbacks.

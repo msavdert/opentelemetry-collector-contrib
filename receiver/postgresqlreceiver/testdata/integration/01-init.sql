@@ -2,6 +2,9 @@ CREATE USER otelu WITH PASSWORD 'otelp';
 GRANT SELECT ON pg_stat_database TO otelu;
 GRANT pg_monitor TO otelu;
 
+-- A physical slot that reserves WAL straight away and that nothing streams from.
+SELECT pg_create_physical_replication_slot('otel_slot', true);
+
 
 CREATE TABLE table1 (
     id serial PRIMARY KEY

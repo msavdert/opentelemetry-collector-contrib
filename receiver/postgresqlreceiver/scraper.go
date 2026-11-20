@@ -288,6 +288,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectBGWriterStats(ctx, now, listClient, &errs)
 	p.collectWalAge(ctx, now, listClient, &errs)
 	p.collectReplicationStats(ctx, now, listClient, &errs)
+	p.collectReplicationSlotStats(ctx, now, listClient, &errs)
 	p.collectMaxConnections(ctx, now, listClient, &errs)
 	p.collectServerScopedLocks(ctx, now, listClient, &errs)
 
@@ -1264,6 +1265,82 @@ func (p *postgreSQLScraper) collectReplicationStats(
 			if rs.flushLagInt >= 0 {
 				p.mb.RecordPostgresqlWalLagDataPoint(now, rs.flushLagInt, metadata.AttributeWalOperationLagFlush, rs.clientAddr)
 			}
+		}
+	}
+}
+
+func (p *postgreSQLScraper) replicationSlotMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlReplicationSlotActive.Enabled ||
+		m.PostgresqlReplicationSlotWalStatus.Enabled ||
+		m.PostgresqlReplicationSlotRetainedWal.Enabled ||
+		m.PostgresqlReplicationSlotSafeWalSize.Enabled ||
+		m.PostgresqlReplicationSlotUnconfirmedWal.Enabled ||
+		m.PostgresqlReplicationSlotInactiveDuration.Enabled ||
+		m.PostgresqlReplicationSlotInvalidated.Enabled
+}
+
+func (p *postgreSQLScraper) collectReplicationSlotStats(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	errs *errsMux,
+) {
+	if !p.replicationSlotMetricsEnabled() {
+		return
+	}
+
+	slots, err := client.getReplicationSlotStats(ctx)
+	if err != nil {
+		errs.addPartial(err)
+		return
+	}
+	for i := range slots {
+		s := &slots[i]
+		slotType, ok := metadata.MapAttributePostgresqlReplicationSlotType[s.slotType]
+		if !ok {
+			continue
+		}
+		// A slot synchronized to a standby is never streamed from there, and its
+		// inactive time restarts at every synchronization.
+		synced := s.synced.Valid && s.synced.Bool
+		if !synced {
+			active := int64(0)
+			if s.active {
+				active = 1
+			}
+			p.mb.RecordPostgresqlReplicationSlotActiveDataPoint(now, active, s.name, slotType)
+		}
+
+		// A status this receiver does not know yet is skipped, not reported as all zeros.
+		if _, known := metadata.MapAttributePostgresqlReplicationSlotWalStatus[s.walStatus.String]; s.walStatus.Valid && known {
+			for _, status := range []metadata.AttributePostgresqlReplicationSlotWalStatus{
+				metadata.AttributePostgresqlReplicationSlotWalStatusReserved,
+				metadata.AttributePostgresqlReplicationSlotWalStatusExtended,
+				metadata.AttributePostgresqlReplicationSlotWalStatusUnreserved,
+				metadata.AttributePostgresqlReplicationSlotWalStatusLost,
+			} {
+				val := int64(0)
+				if status.String() == s.walStatus.String {
+					val = 1
+				}
+				p.mb.RecordPostgresqlReplicationSlotWalStatusDataPoint(now, val, s.name, slotType, status)
+			}
+		}
+		if s.retainedBytes.Valid {
+			p.mb.RecordPostgresqlReplicationSlotRetainedWalDataPoint(now, s.retainedBytes.Int64, s.name, slotType)
+		}
+		if s.safeWalSize.Valid {
+			p.mb.RecordPostgresqlReplicationSlotSafeWalSizeDataPoint(now, s.safeWalSize.Int64, s.name, slotType)
+		}
+		if s.unconfirmedBytes.Valid {
+			p.mb.RecordPostgresqlReplicationSlotUnconfirmedWalDataPoint(now, s.unconfirmedBytes.Int64, s.name, slotType)
+		}
+		if s.inactiveSeconds.Valid && !synced {
+			p.mb.RecordPostgresqlReplicationSlotInactiveDurationDataPoint(now, s.inactiveSeconds.Float64, s.name, slotType)
+		}
+		if s.invalidationReason.Valid {
+			p.mb.RecordPostgresqlReplicationSlotInvalidatedDataPoint(now, 1, s.name, slotType, s.invalidationReason.String)
 		}
 	}
 }

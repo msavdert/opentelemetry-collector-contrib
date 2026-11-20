@@ -426,6 +426,120 @@ The total execution time of SQL statements currently tracked by pg_stat_statemen
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
+### postgresql.replication_slot.active
+
+Whether a process is currently streaming from the replication slot, 1 if so and 0 otherwise. No data point is reported for a slot synchronized to a standby from a primary server.
+
+A slot synchronized to a standby (PostgreSQL 17 or later) is never streamed from there, so it is skipped while the server is a standby. After the standby is promoted the slot is reported again.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| postgresql.replication_slot.name | The name of the replication slot. | Any Str | Recommended | - |
+| postgresql.replication_slot.type | The type of the replication slot. | Str: ``physical``, ``logical`` | Recommended | - |
+
+### postgresql.replication_slot.inactive_duration
+
+The time since the replication slot became inactive. No data point is reported while a process is streaming from the slot, or for a slot synchronized to a standby from a primary server.
+
+Requires PostgreSQL 17 or later. A slot synchronized to a standby is skipped, because
+its inactive time restarts at every synchronization.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| postgresql.replication_slot.name | The name of the replication slot. | Any Str | Recommended | - |
+| postgresql.replication_slot.type | The type of the replication slot. | Str: ``physical``, ``logical`` | Recommended | - |
+
+### postgresql.replication_slot.invalidated
+
+Set to 1 for a replication slot that has been invalidated, with the reason as an attribute. No data point is reported for a slot that is still valid.
+
+Requires PostgreSQL 17 or later.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| postgresql.replication_slot.name | The name of the replication slot. | Any Str | Recommended | - |
+| postgresql.replication_slot.type | The type of the replication slot. | Str: ``physical``, ``logical`` | Recommended | - |
+| postgresql.replication_slot.invalidation_reason | The reason the replication slot was invalidated. | Any Str | Recommended | - |
+
+### postgresql.replication_slot.retained_wal
+
+The amount of WAL retained by the replication slot, measured from the oldest WAL the slot needs to the current WAL position. No data point is reported for a slot that does not reserve WAL, or whose required WAL has already been lost.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| postgresql.replication_slot.name | The name of the replication slot. | Any Str | Recommended | - |
+| postgresql.replication_slot.type | The type of the replication slot. | Str: ``physical``, ``logical`` | Recommended | - |
+
+### postgresql.replication_slot.safe_wal_size
+
+The amount of WAL that can still be written before the replication slot is at risk of losing required WAL. It can be negative while the slot is unreserved. No data point is reported when the server does not limit retained WAL, when the slot has already lost WAL, or when the slot does not reserve WAL.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| postgresql.replication_slot.name | The name of the replication slot. | Any Str | Recommended | - |
+| postgresql.replication_slot.type | The type of the replication slot. | Str: ``physical``, ``logical`` | Recommended | - |
+
+### postgresql.replication_slot.unconfirmed_wal
+
+The amount of WAL generated since the consumer of a logical replication slot last confirmed it had received changes. No data point is reported for physical slots or for a slot whose required WAL has been lost.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| postgresql.replication_slot.name | The name of the replication slot. | Any Str | Recommended | - |
+| postgresql.replication_slot.type | The type of the replication slot. | Str: ``physical``, ``logical`` | Recommended | - |
+
+### postgresql.replication_slot.wal_status
+
+Availability of the WAL claimed by the replication slot, reported as a state set. The data point for the current status is 1 and the data points for the other statuses are 0. No data points are reported for a slot that does not reserve WAL, or whose status this receiver does not recognize.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| postgresql.replication_slot.name | The name of the replication slot. | Any Str | Recommended | - |
+| postgresql.replication_slot.type | The type of the replication slot. | Str: ``physical``, ``logical`` | Recommended | - |
+| postgresql.replication_slot.wal_status | The availability of the WAL files claimed by the replication slot. | Str: ``reserved``, ``extended``, ``unreserved``, ``lost`` | Recommended | - |
+
 ### postgresql.sequential_scans
 
 The number of sequential scans.

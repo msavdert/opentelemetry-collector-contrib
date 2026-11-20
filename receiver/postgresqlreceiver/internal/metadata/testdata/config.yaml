@@ -63,6 +63,27 @@ all_set:
     postgresql.replication.data_delay:
       enabled: true
       attributes: ["replication_client"]
+    postgresql.replication_slot.active:
+      enabled: true
+      attributes: ["postgresql.replication_slot.name","postgresql.replication_slot.type"]
+    postgresql.replication_slot.inactive_duration:
+      enabled: true
+      attributes: ["postgresql.replication_slot.name","postgresql.replication_slot.type"]
+    postgresql.replication_slot.invalidated:
+      enabled: true
+      attributes: ["postgresql.replication_slot.name","postgresql.replication_slot.type","postgresql.replication_slot.invalidation_reason"]
+    postgresql.replication_slot.retained_wal:
+      enabled: true
+      attributes: ["postgresql.replication_slot.name","postgresql.replication_slot.type"]
+    postgresql.replication_slot.safe_wal_size:
+      enabled: true
+      attributes: ["postgresql.replication_slot.name","postgresql.replication_slot.type"]
+    postgresql.replication_slot.unconfirmed_wal:
+      enabled: true
+      attributes: ["postgresql.replication_slot.name","postgresql.replication_slot.type"]
+    postgresql.replication_slot.wal_status:
+      enabled: true
+      attributes: ["postgresql.replication_slot.name","postgresql.replication_slot.type","postgresql.replication_slot.wal_status"]
     postgresql.rollbacks:
       enabled: true
       attributes: ["db.namespace"]
@@ -215,6 +236,27 @@ reaggregate_set:
       enabled: true
       attributes: []
     postgresql.replication.data_delay:
+      enabled: true
+      attributes: []
+    postgresql.replication_slot.active:
+      enabled: true
+      attributes: []
+    postgresql.replication_slot.inactive_duration:
+      enabled: true
+      attributes: []
+    postgresql.replication_slot.invalidated:
+      enabled: true
+      attributes: []
+    postgresql.replication_slot.retained_wal:
+      enabled: true
+      attributes: []
+    postgresql.replication_slot.safe_wal_size:
+      enabled: true
+      attributes: []
+    postgresql.replication_slot.unconfirmed_wal:
+      enabled: true
+      attributes: []
+    postgresql.replication_slot.wal_status:
       enabled: true
       attributes: []
     postgresql.rollbacks:
@@ -371,6 +413,27 @@ none_set:
     postgresql.replication.data_delay:
       enabled: false
       attributes: ["replication_client"]
+    postgresql.replication_slot.active:
+      enabled: false
+      attributes: ["postgresql.replication_slot.name","postgresql.replication_slot.type"]
+    postgresql.replication_slot.inactive_duration:
+      enabled: false
+      attributes: ["postgresql.replication_slot.name","postgresql.replication_slot.type"]
+    postgresql.replication_slot.invalidated:
+      enabled: false
+      attributes: ["postgresql.replication_slot.name","postgresql.replication_slot.type","postgresql.replication_slot.invalidation_reason"]
+    postgresql.replication_slot.retained_wal:
+      enabled: false
+      attributes: ["postgresql.replication_slot.name","postgresql.replication_slot.type"]
+    postgresql.replication_slot.safe_wal_size:
+      enabled: false
+      attributes: ["postgresql.replication_slot.name","postgresql.replication_slot.type"]
+    postgresql.replication_slot.unconfirmed_wal:
+      enabled: false
+      attributes: ["postgresql.replication_slot.name","postgresql.replication_slot.type"]
+    postgresql.replication_slot.wal_status:
+      enabled: false
+      attributes: ["postgresql.replication_slot.name","postgresql.replication_slot.type","postgresql.replication_slot.wal_status"]
     postgresql.rollbacks:
       enabled: false
       attributes: ["db.namespace"]

@@ -68,6 +68,7 @@ type client interface {
 	getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error)
 	getTableCount(ctx context.Context) (int64, error)
 	getReplicationStats(ctx context.Context) ([]replicationStats, error)
+	getReplicationSlotStats(ctx context.Context) ([]replicationSlotStats, error)
 	getLatestWalAgeSeconds(ctx context.Context) (int64, error)
 	getMaxConnections(ctx context.Context) (int64, error)
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
@@ -1393,6 +1394,79 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 	}
 
 	return rs, errors
+}
+
+// replicationSlotStats holds one row of pg_replication_slots. A nullable
+// column that PostgreSQL leaves NULL is reported as an invalid sql.Null* value,
+// and the scraper records no data point for it.
+type replicationSlotStats struct {
+	name               string
+	slotType           string
+	active             bool
+	walStatus          sql.NullString
+	retainedBytes      sql.NullInt64
+	safeWalSize        sql.NullInt64
+	unconfirmedBytes   sql.NullInt64
+	inactiveSeconds    sql.NullFloat64 // PostgreSQL 17 and later
+	invalidationReason sql.NullString  // PostgreSQL 17 and later
+	synced             sql.NullBool    // PostgreSQL 17 and later
+}
+
+// currentWalLsnSQL is the WAL position slots are measured against: the newest
+// position a standby has received or replayed, or the write position on a primary.
+const currentWalLsnSQL = `CASE WHEN pg_is_in_recovery()
+	THEN greatest(pg_last_wal_receive_lsn(), pg_last_wal_replay_lsn())
+	ELSE pg_current_wal_lsn() END`
+
+// getReplicationSlotStats reads pg_replication_slots. The columns the metrics
+// need exist from PostgreSQL 13; older servers report no slots and no error.
+func (c *postgreSQLClient) getReplicationSlotStats(ctx context.Context) ([]replicationSlotStats, error) {
+	version, err := c.getVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+	major, err := parseMajorVersion(version)
+	if err != nil {
+		return nil, err
+	}
+	if major < 13 {
+		return nil, nil
+	}
+
+	inactiveColumns := "NULL::double precision, NULL::text, NULL::boolean"
+	if major >= 17 {
+		inactiveColumns = "extract(epoch FROM clock_timestamp() - inactive_since)::double precision, invalidation_reason, (synced AND pg_is_in_recovery())"
+	}
+	query := `WITH cur AS (SELECT ` + currentWalLsnSQL + ` AS lsn)
+SELECT
+	slot_name,
+	slot_type,
+	active,
+	wal_status,
+	CASE WHEN wal_status IS DISTINCT FROM 'lost' THEN pg_wal_lsn_diff(cur.lsn, restart_lsn)::bigint END,
+	CASE WHEN restart_lsn IS NOT NULL THEN safe_wal_size END,
+	CASE WHEN slot_type = 'logical' AND wal_status IS DISTINCT FROM 'lost'
+		THEN pg_wal_lsn_diff(cur.lsn, confirmed_flush_lsn)::bigint END,
+	` + inactiveColumns + `
+FROM pg_replication_slots, cur;`
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query pg_replication_slots: %w", err)
+	}
+	defer rows.Close()
+	var slots []replicationSlotStats
+	var errs error
+	for rows.Next() {
+		var s replicationSlotStats
+		if err := rows.Scan(&s.name, &s.slotType, &s.active, &s.walStatus, &s.retainedBytes,
+			&s.safeWalSize, &s.unconfirmedBytes, &s.inactiveSeconds, &s.invalidationReason, &s.synced); err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		slots = append(slots, s)
+	}
+	return slots, multierr.Append(errs, rows.Err())
 }
 
 func (c *postgreSQLClient) getLatestWalAgeSeconds(ctx context.Context) (int64, error) {

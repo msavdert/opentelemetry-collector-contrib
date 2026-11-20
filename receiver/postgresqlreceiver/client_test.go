@@ -4,6 +4,8 @@
 package postgresqlreceiver
 
 import (
+	"database/sql"
+	"database/sql/driver"
 	"errors"
 	"strings"
 	"testing"
@@ -895,4 +897,166 @@ func TestGetIndexStatsRowsErr(t *testing.T) {
 	require.ErrorIs(t, err, iterErr)
 	assert.Len(t, stats, 1)
 	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGetReplicationSlotStats(t *testing.T) {
+	columns := []string{
+		"slot_name", "slot_type", "active", "wal_status", "retained", "safe_wal_size",
+		"unconfirmed", "inactive_seconds", "invalidation_reason", "synced",
+	}
+
+	tests := []struct {
+		name          string
+		serverVersion string
+		// wantQuery is false when the version is too old for the query to run.
+		wantQuery    bool
+		wantPG17Cols bool
+		rows         [][]driver.Value
+		queryErr     error
+		want         []replicationSlotStats
+		wantErr      bool
+	}{
+		{
+			name:          "PostgreSQL 12 has no slot columns, so no query and no error",
+			serverVersion: "12.19",
+		},
+		{
+			name:          "PostgreSQL 13 keeps NULL columns invalid",
+			serverVersion: "13.18",
+			wantQuery:     true,
+			rows: [][]driver.Value{
+				{"idle", "physical", false, "reserved", int64(100), nil, nil, nil, nil, nil},
+				{"logical", "logical", true, "extended", int64(200), int64(300), int64(50), nil, nil, nil},
+				{"fresh", "physical", false, nil, nil, nil, nil, nil, nil, nil},
+			},
+			want: []replicationSlotStats{
+				{name: "idle", slotType: "physical", walStatus: sql.NullString{String: "reserved", Valid: true}, retainedBytes: sql.NullInt64{Int64: 100, Valid: true}},
+				{
+					name: "logical", slotType: "logical", active: true,
+					walStatus:        sql.NullString{String: "extended", Valid: true},
+					retainedBytes:    sql.NullInt64{Int64: 200, Valid: true},
+					safeWalSize:      sql.NullInt64{Int64: 300, Valid: true},
+					unconfirmedBytes: sql.NullInt64{Int64: 50, Valid: true},
+				},
+				{name: "fresh", slotType: "physical"},
+			},
+		},
+		{
+			name:          "PostgreSQL 17 reads inactive time and invalidation reason",
+			serverVersion: "17.2",
+			wantQuery:     true,
+			wantPG17Cols:  true,
+			rows: [][]driver.Value{
+				{"gone", "physical", false, "lost", nil, nil, nil, 12.5, "wal_removed", false},
+				{"copy", "logical", false, "reserved", int64(10), int64(20), nil, 1.5, nil, true},
+			},
+			want: []replicationSlotStats{
+				{
+					name: "gone", slotType: "physical",
+					walStatus:          sql.NullString{String: "lost", Valid: true},
+					inactiveSeconds:    sql.NullFloat64{Float64: 12.5, Valid: true},
+					invalidationReason: sql.NullString{String: "wal_removed", Valid: true},
+					synced:             sql.NullBool{Bool: false, Valid: true},
+				},
+				{
+					name: "copy", slotType: "logical",
+					walStatus:       sql.NullString{String: "reserved", Valid: true},
+					retainedBytes:   sql.NullInt64{Int64: 10, Valid: true},
+					safeWalSize:     sql.NullInt64{Int64: 20, Valid: true},
+					inactiveSeconds: sql.NullFloat64{Float64: 1.5, Valid: true},
+					synced:          sql.NullBool{Bool: true, Valid: true},
+				},
+			},
+		},
+		{
+			name:          "query error",
+			serverVersion: "16.4",
+			wantQuery:     true,
+			queryErr:      errors.New("permission denied"),
+			wantErr:       true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherRegexp))
+			require.NoError(t, err)
+			defer db.Close()
+			client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+
+			mock.ExpectQuery("SHOW server_version;").
+				WillReturnRows(sqlmock.NewRows([]string{"server_version"}).AddRow(tc.serverVersion))
+			if tc.wantQuery {
+				pattern := "NULL::double precision, NULL::text, NULL::boolean"
+				if tc.wantPG17Cols {
+					pattern = `invalidation_reason, \(synced AND pg_is_in_recovery\(\)\)`
+				}
+				// The query reads the position of a standby when in recovery, and
+				// leaves out what a lost or never-reserved slot cannot report.
+				pattern += "(?s).*"
+				eq := mock.ExpectQuery(`(?s)pg_is_in_recovery\(\).*greatest\(pg_last_wal_receive_lsn\(\), pg_last_wal_replay_lsn\(\)\).*` +
+					`wal_status IS DISTINCT FROM 'lost' THEN pg_wal_lsn_diff.*` +
+					`restart_lsn IS NOT NULL THEN safe_wal_size.*` +
+					`slot_type = 'logical' AND wal_status IS DISTINCT FROM 'lost'.*` + pattern)
+				if tc.queryErr != nil {
+					eq.WillReturnError(tc.queryErr)
+				} else {
+					rows := sqlmock.NewRows(columns)
+					for _, r := range tc.rows {
+						rows.AddRow(r...)
+					}
+					eq.WillReturnRows(rows)
+				}
+			}
+
+			got, err := client.getReplicationSlotStats(t.Context())
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.want, got)
+			}
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestGetReplicationSlotStatsRowErrors(t *testing.T) {
+	columns := []string{
+		"slot_name", "slot_type", "active", "wal_status", "retained", "safe_wal_size",
+		"unconfirmed", "inactive_seconds", "invalidation_reason", "synced",
+	}
+	newClient := func(t *testing.T) (*postgreSQLClient, sqlmock.Sqlmock) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		t.Cleanup(func() { db.Close() })
+		mock.ExpectQuery("SHOW server_version;").
+			WillReturnRows(sqlmock.NewRows([]string{"server_version"}).AddRow("17.2"))
+		return &postgreSQLClient{client: db, closeFn: func() error { return nil }}, mock
+	}
+
+	t.Run("scan error", func(t *testing.T) {
+		client, mock := newClient(t)
+		// A text value cannot be scanned into the boolean active column.
+		mock.ExpectQuery("pg_replication_slots").WillReturnRows(sqlmock.NewRows(columns).
+			AddRow("bad", "physical", "not-a-bool", nil, nil, nil, nil, nil, nil, nil).
+			AddRow("good", "physical", false, nil, nil, nil, nil, nil, nil, nil))
+		slots, err := client.getReplicationSlotStats(t.Context())
+		require.Error(t, err)
+		assert.Len(t, slots, 1)
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("rows error", func(t *testing.T) {
+		client, mock := newClient(t)
+		iterErr := errors.New("connection reset mid-result")
+		mock.ExpectQuery("pg_replication_slots").WillReturnRows(sqlmock.NewRows(columns).
+			AddRow("first", "physical", false, nil, nil, nil, nil, nil, nil, nil).
+			AddRow("second", "physical", false, nil, nil, nil, nil, nil, nil, nil).
+			RowError(1, iterErr))
+		slots, err := client.getReplicationSlotStats(t.Context())
+		require.ErrorIs(t, err, iterErr)
+		assert.Len(t, slots, 1)
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
 }

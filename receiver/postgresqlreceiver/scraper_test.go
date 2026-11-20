@@ -193,6 +193,7 @@ func TestScraper(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Databases = []string{"otel"}
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+		setReplicationSlotMetrics(cfg, true)
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled = true
@@ -355,6 +356,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		// Validate expected default config values and then enable all metrics
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+		setReplicationSlotMetrics(cfg, true)
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled)
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled)
@@ -395,6 +397,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = false
+		setReplicationSlotMetrics(cfg, false)
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = false
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled = false
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlTempIo.Enabled = false
@@ -493,6 +496,7 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 		// Validate expected default config values and then enable all metrics
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+		setReplicationSlotMetrics(cfg, true)
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled)
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled)
@@ -554,6 +558,7 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 		// Validate expected default config values and then enable all metrics
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+		setReplicationSlotMetrics(cfg, true)
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled)
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled)
@@ -609,6 +614,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		// Validate expected default config values and then enable all metrics
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled)
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlWalDelay.Enabled = true
+		setReplicationSlotMetrics(cfg, true)
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled)
 		cfg.MetricsBuilderConfig.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.MetricsBuilderConfig.Metrics.PostgresqlTempFiles.Enabled)
@@ -2485,6 +2491,11 @@ func (m *mockClient) getReplicationStats(ctx context.Context) ([]replicationStat
 	return args.Get(0).([]replicationStats), args.Error(1)
 }
 
+func (m *mockClient) getReplicationSlotStats(ctx context.Context) ([]replicationSlotStats, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]replicationSlotStats), args.Error(1)
+}
+
 func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
 	args := m.Called()
 	return args.Get(0).([]string), args.Error(1)
@@ -2628,6 +2639,7 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 				writeLag:     -1,
 			},
 		}, nil)
+		m.On("getReplicationSlotStats", mock.Anything).Return(testReplicationSlots(true), nil)
 	} else {
 		table1 := "table1"
 		table2 := "table2"
@@ -2783,6 +2795,174 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 	}
 }
 
+// testReplicationSlots returns the rows the client produces for one slot of
+// each shape the scraper handles. With withPG17Columns false the PostgreSQL 17
+// columns stay NULL, as they do on 13 to 16.
+func testReplicationSlots(withPG17Columns bool) []replicationSlotStats {
+	pg17Float := func(v float64) sql.NullFloat64 { return sql.NullFloat64{Float64: v, Valid: withPG17Columns} }
+	pg17Reason := func(v string) sql.NullString { return sql.NullString{String: v, Valid: withPG17Columns} }
+	status := func(v string) sql.NullString { return sql.NullString{String: v, Valid: true} }
+	bytes := func(v int64) sql.NullInt64 { return sql.NullInt64{Int64: v, Valid: true} }
+	return []replicationSlotStats{
+		{
+			name: "phys_active", slotType: "physical", active: true,
+			walStatus: status("reserved"), retainedBytes: bytes(1024), safeWalSize: bytes(67108864),
+		},
+		{
+			// max_slot_wal_keep_size is -1 on this server, so there is no safe size.
+			name: "phys_idle", slotType: "physical",
+			walStatus: status("extended"), retainedBytes: bytes(8192), inactiveSeconds: pg17Float(120.5),
+		},
+		{
+			name: "logical_slot", slotType: "logical", active: true,
+			walStatus: status("reserved"), retainedBytes: bytes(2048), safeWalSize: bytes(4096), unconfirmedBytes: bytes(512),
+		},
+		{
+			// Lost WAL: no safe size, no retained WAL.
+			name: "phys_lost", slotType: "physical", walStatus: status("lost"),
+			inactiveSeconds: pg17Float(3600), invalidationReason: pg17Reason("wal_removed"),
+		},
+		{
+			// Invalidated by idle timeout: the slot keeps its restart position, but
+			// the client reports no retained WAL for a lost slot.
+			name: "phys_idle_timeout", slotType: "physical", walStatus: status("lost"),
+			inactiveSeconds: pg17Float(7200), invalidationReason: pg17Reason("idle_timeout"),
+		},
+		{
+			// A slot that never reserved WAL has no status, no retained WAL, no safe size.
+			name: "phys_fresh", slotType: "physical",
+		},
+		{
+			// A lost logical slot keeps its confirmed position, which the client does not report.
+			name: "logical_lost", slotType: "logical", walStatus: status("lost"),
+			inactiveSeconds: pg17Float(60), invalidationReason: pg17Reason("wal_removed"),
+		},
+		{
+			// A slot synchronized to a standby: no active and no inactive duration.
+			name: "logical_synced", slotType: "logical", walStatus: status("reserved"),
+			retainedBytes: bytes(4096), safeWalSize: bytes(8192), inactiveSeconds: pg17Float(5),
+			synced: sql.NullBool{Bool: true, Valid: withPG17Columns},
+		},
+		{
+			// A status this receiver does not know yet.
+			name: "phys_future_status", slotType: "physical",
+			walStatus: status("future_status"), retainedBytes: bytes(100),
+		},
+	}
+}
+
+func countSlotPoints(actual pmetric.Metrics) map[string]int {
+	points := map[string]int{}
+	ms := actual.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < ms.Len(); i++ {
+		m := ms.At(i)
+		if !strings.HasPrefix(m.Name(), "postgresql.replication_slot.") {
+			continue
+		}
+		name := strings.TrimPrefix(m.Name(), "postgresql.replication_slot.")
+		switch m.Type() {
+		case pmetric.MetricTypeGauge:
+			points[name] = m.Gauge().DataPoints().Len()
+		case pmetric.MetricTypeSum:
+			points[name] = m.Sum().DataPoints().Len()
+		}
+	}
+	return points
+}
+
+// onlyReplicationSlotMetrics disables every metric, then enables the slot ones.
+func onlyReplicationSlotMetrics(cfg *Config) {
+	m := reflect.ValueOf(&cfg.MetricsBuilderConfig.Metrics).Elem()
+	for _, field := range m.Fields() {
+		field.FieldByName("Enabled").SetBool(false)
+	}
+	setReplicationSlotMetrics(cfg, true)
+}
+
+func setReplicationSlotMetrics(cfg *Config, enabled bool) {
+	m := &cfg.MetricsBuilderConfig.Metrics
+	m.PostgresqlReplicationSlotActive.Enabled = enabled
+	m.PostgresqlReplicationSlotWalStatus.Enabled = enabled
+	m.PostgresqlReplicationSlotRetainedWal.Enabled = enabled
+	m.PostgresqlReplicationSlotSafeWalSize.Enabled = enabled
+	m.PostgresqlReplicationSlotUnconfirmedWal.Enabled = enabled
+	m.PostgresqlReplicationSlotInactiveDuration.Enabled = enabled
+	m.PostgresqlReplicationSlotInvalidated.Enabled = enabled
+}
+
+// TestScraperReplicationSlotsPointCounts checks which data points each slot shape yields,
+// with and without the PostgreSQL 17 columns.
+func TestScraperReplicationSlotsPointCounts(t *testing.T) {
+	tests := []struct {
+		name  string
+		pg17  bool
+		wants map[string]int
+	}{
+		{
+			name: "before PostgreSQL 17: no inactive duration, no invalidated, no synced slots",
+			pg17: false,
+			wants: map[string]int{
+				"active":          9,
+				"wal_status":      28, // seven slots with a known status, four states each
+				"retained_wal":    5,
+				"safe_wal_size":   3,
+				"unconfirmed_wal": 1,
+			},
+		},
+		{
+			name: "PostgreSQL 17 and later: the synced slot has no active and no inactive duration",
+			pg17: true,
+			wants: map[string]int{
+				"active":            8,
+				"wal_status":        28,
+				"retained_wal":      5,
+				"safe_wal_size":     3,
+				"unconfirmed_wal":   1,
+				"inactive_duration": 4,
+				"invalidated":       3,
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			listClient := new(mockClient)
+			listClient.On("Close").Return(nil)
+			listClient.On("listDatabases").Return([]string{}, nil)
+			listClient.On("getReplicationSlotStats", mock.Anything).Return(testReplicationSlots(tc.pg17), nil)
+			factory := new(mockClientFactory)
+			factory.On("getClient", mock.Anything, defaultPostgreSQLDatabase).Return(listClient, nil)
+
+			cfg := createDefaultConfig().(*Config)
+			onlyReplicationSlotMetrics(cfg)
+			scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+			require.NoError(t, err)
+
+			actual, err := scraper.scrape(t.Context())
+			require.NoError(t, err)
+			assert.Equal(t, tc.wants, countSlotPoints(actual))
+		})
+	}
+}
+
+// TestScraperReplicationSlotsQueryError checks that a failing query is a partial error.
+func TestScraperReplicationSlotsQueryError(t *testing.T) {
+	listClient := new(mockClient)
+	listClient.On("Close").Return(nil)
+	listClient.On("listDatabases").Return([]string{}, nil)
+	listClient.On("getReplicationSlotStats", mock.Anything).Return([]replicationSlotStats(nil), errors.New("permission denied"))
+	factory := new(mockClientFactory)
+	factory.On("getClient", mock.Anything, defaultPostgreSQLDatabase).Return(listClient, nil)
+
+	cfg := createDefaultConfig().(*Config)
+	onlyReplicationSlotMetrics(cfg)
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	_, err = scraper.scrape(t.Context())
+	require.Error(t, err)
+	assert.True(t, scrapererror.IsPartialScrapeError(err))
+}
+
 func TestScraperSkipsQueriesForDisabledMetrics(t *testing.T) {
 	factory := new(mockClientFactory)
 	factory.initMocks([]string{"otel"})
@@ -2909,6 +3089,13 @@ func TestScraperSkipsServerWideQueriesForDisabledMetrics(t *testing.T) {
 				cfg.MetricsBuilderConfig.Metrics.PostgresqlWalLag.Enabled = false
 			},
 			mockMethod: "getReplicationStats",
+		},
+		{
+			name: "getReplicationSlotStats skipped when all replication slot metrics are disabled",
+			disableMetrics: func(cfg *Config) {
+				setReplicationSlotMetrics(cfg, false)
+			},
+			mockMethod: "getReplicationSlotStats",
 		},
 		{
 			name:           "getLatestWalAgeSeconds skipped when postgresql.wal.age disabled",
@@ -3096,6 +3283,12 @@ var queryGuards = []queryGuard{
 	}},
 	{"replicationMetricsEnabled", (*postgreSQLScraper).replicationMetricsEnabled, []string{
 		"PostgresqlReplicationDataDelay", "PostgresqlWalDelay", "PostgresqlWalLag",
+	}},
+	{"replicationSlotMetricsEnabled", (*postgreSQLScraper).replicationSlotMetricsEnabled, []string{
+		"PostgresqlReplicationSlotActive", "PostgresqlReplicationSlotWalStatus",
+		"PostgresqlReplicationSlotRetainedWal", "PostgresqlReplicationSlotSafeWalSize",
+		"PostgresqlReplicationSlotUnconfirmedWal", "PostgresqlReplicationSlotInactiveDuration",
+		"PostgresqlReplicationSlotInvalidated",
 	}},
 }
 

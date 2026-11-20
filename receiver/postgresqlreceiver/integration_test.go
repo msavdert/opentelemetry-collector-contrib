@@ -106,6 +106,8 @@ func integrationTest(
 			"postgresql.index.size",
 			"postgresql.operations",
 			"postgresql.replication.data_delay",
+			"postgresql.replication_slot.inactive_duration",
+			"postgresql.replication_slot.retained_wal",
 			"postgresql.rollbacks",
 			"postgresql.rows",
 			"postgresql.sequential_scans",
@@ -185,6 +187,7 @@ func integrationTest(
 				rCfg.MetricsBuilderConfig.Metrics.PostgresqlBlksRead.Enabled = true
 				rCfg.MetricsBuilderConfig.Metrics.PostgresqlSequentialScans.Enabled = true
 				rCfg.MetricsBuilderConfig.Metrics.PostgresqlDatabaseLocks.Enabled = true
+				setReplicationSlotMetrics(rCfg, true)
 			},
 		),
 		scraperinttest.WithExpectedFile(expectedFile),
