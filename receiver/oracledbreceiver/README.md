@@ -146,6 +146,9 @@ See [documentation.md](./documentation.md) for the full list of resource attribu
 These grants are required to populate the `oracle.db.version`, `oracle.db.edition`,
 `oracle.db.role`, `oracle.db.open_mode`, and `oracle.db.pdb` resource attributes.
 Detection is best-effort; failures are logged at warn level and the receiver continues.
+`oracle.db.role` and `oracle.db.open_mode` are read again from `v$database` on every scrape (one single-row query;
+disable both attributes to avoid it), so they follow a Data Guard switchover or failover. They are omitted for
+a scrape in which that query fails.
 
 ```sql
 GRANT SELECT ON V_$INSTANCE TO <username>;

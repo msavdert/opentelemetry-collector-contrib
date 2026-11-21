@@ -1,0 +1,13 @@
+change_type: bug_fix
+
+component: receiver/oracledb
+
+note: Refresh `oracle.db.role` and `oracle.db.open_mode` on every scrape instead of once at start.
+
+issues: [12345]
+
+subtext: |
+  After a Data Guard switchover or failover the resource attributes kept the values read at start until the
+  Collector restarted. They are now read from `v$database` on every scrape and omitted when that query fails.
+
+change_logs: [user]

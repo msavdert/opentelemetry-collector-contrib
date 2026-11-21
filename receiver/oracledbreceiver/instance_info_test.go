@@ -517,7 +517,7 @@ func TestSetupResourceBuilder_NoPDB(t *testing.T) {
 		instanceInfo:         oracleInstanceInfo{dbVersion: "19.0.0.0.0", isCDB: false},
 	}
 
-	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
+	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder(), scrpr.instanceInfo).Emit()
 
 	_, hasPDB := res.Attributes().Get("oracle.db.pdb")
 	assert.False(t, hasPDB)
@@ -556,7 +556,7 @@ func TestSetupResourceBuilder_LoopbackResolvesServerAddressOnly(t *testing.T) {
 		serviceInstanceID:    serviceInstanceID,
 	}
 
-	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
+	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder(), scrpr.instanceInfo).Emit()
 
 	hostName, ok := res.Attributes().Get("host.name")
 	require.True(t, ok)
@@ -581,7 +581,7 @@ func TestSetupResourceBuilder_EmptyServerAddressNotEmitted(t *testing.T) {
 		metricsBuilderConfig: cfg,
 	}
 
-	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
+	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder(), scrpr.instanceInfo).Emit()
 
 	_, hasServerAddress := res.Attributes().Get("server.address")
 	assert.False(t, hasServerAddress, "server.address should not be emitted when the host is undetermined")
@@ -619,7 +619,7 @@ func TestSetupResourceBuilder_UndeterminedHostNotEmitted(t *testing.T) {
 				serviceInstanceID:    serviceInstanceID,
 			}
 
-			res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
+			res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder(), scrpr.instanceInfo).Emit()
 
 			address, hasServerAddress := res.Attributes().Get("server.address")
 			assert.False(t, hasServerAddress,
@@ -656,7 +656,7 @@ func TestSetupResourceBuilder_AllMetadataFields(t *testing.T) {
 		},
 	}
 
-	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
+	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder(), scrpr.instanceInfo).Emit()
 
 	version, ok := res.Attributes().Get("oracle.db.version")
 	require.True(t, ok)
@@ -695,7 +695,7 @@ func TestSetupResourceBuilder_EmptyMetadataFieldsNotEmitted(t *testing.T) {
 		instanceInfo:         oracleInstanceInfo{},
 	}
 
-	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
+	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder(), scrpr.instanceInfo).Emit()
 
 	for _, attr := range []string{"oracle.db.version", "oracle.db.role", "oracle.db.open_mode", "oracle.db.hosting_type", "oracle.db.edition"} {
 		_, exists := res.Attributes().Get(attr)

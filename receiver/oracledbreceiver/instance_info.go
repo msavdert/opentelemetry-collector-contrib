@@ -5,14 +5,19 @@ package oracledbreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"strings"
 	"time"
 
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
 // oracleInstanceInfo holds Oracle deployment metadata detected once at scraper start time.
+// databaseRole and openMode change at runtime (Data Guard switchover or failover), so the
+// resource attributes take them from currentInstanceInfo instead.
 type oracleInstanceInfo struct {
 	dbVersion      string
 	dbEdition      string
@@ -45,6 +50,7 @@ const (
 	instanceInfoDetectTimeout = 5 * time.Second
 
 	instanceCDBSQL            = "SELECT cdb, database_role, open_mode FROM v$database"
+	instanceRoleSQL           = "SELECT database_role, open_mode FROM v$database"
 	instanceConNameSQL        = "SELECT sys_context('USERENV','CON_NAME') AS con_name FROM dual"
 	instanceConTypeSQL        = "SELECT decode(sys_context('USERENV','CON_ID'),1,'CDB','PDB') AS con_type FROM dual"
 	instanceOCICDBServicesSQL = "SELECT 1 FROM cdb_services WHERE name LIKE '%oraclecloud%' AND rownum = 1"
@@ -70,6 +76,8 @@ const (
 	colPath         = "PATH"
 	colVersion      = "VERSION"
 )
+
+var errNoRoleRow = errors.New("v$database returned no row")
 
 // detectInstanceInfo queries Oracle at startup to populate version, role, and multitenant info.
 // Failures are logged at Warn level; affected fields retain their zero value.
@@ -196,4 +204,46 @@ func detectHostingType(
 	}
 
 	return hostingTypeSelfManaged
+}
+
+// currentInstanceInfo returns the start-time instance info with databaseRole and openMode read
+// again from v$database. Callers read it once per scrape and pass it to every resource builder
+// of that scrape. The query is skipped when the start-time detection read no version of 12c or
+// later (as at start, v$database role columns are not read before 12c) and when neither
+// attribute is enabled in ra. When the query fails both values are left empty, so the
+// attributes are omitted instead of repeating a role that may no longer be true.
+func (s *oracleScraper) currentInstanceInfo(ctx context.Context, ra metadata.ResourceAttributesConfig) oracleInstanceInfo {
+	info := s.instanceInfo
+	if s.db == nil || majorVersion(info.dbVersion) < minMultitenantVersion ||
+		(!ra.OracleDbRole.Enabled && !ra.OracleDbOpenMode.Enabled) {
+		return info
+	}
+	info.databaseRole, info.openMode = "", ""
+
+	queryCtx, cancel := context.WithTimeout(ctx, instanceInfoDetectTimeout)
+	defer cancel()
+	rows, err := s.clientProviderFunc(s.db, instanceRoleSQL, s.logger).metricRows(queryCtx)
+	if err == nil && len(rows) == 0 {
+		err = errNoRoleRow
+	}
+	if err != nil {
+		switch {
+		case ctx.Err() != nil:
+			// The scrape was cancelled (shutdown): not a database problem.
+		case s.roleRefreshFailing:
+			s.logger.Debug("oracledbreceiver: failed to refresh database role and open mode", zap.Error(err))
+		default:
+			s.logger.Warn("oracledbreceiver: failed to refresh database role and open mode. "+
+				"oracle.db.role and oracle.db.open_mode are not set until the query succeeds", zap.Error(err))
+			s.roleRefreshFailing = true
+		}
+		return info
+	}
+	if s.roleRefreshFailing {
+		s.logger.Info("oracledbreceiver: database role and open mode refreshed again")
+		s.roleRefreshFailing = false
+	}
+	info.databaseRole = rows[0][colDatabaseRole]
+	info.openMode = rows[0][colOpenMode]
+	return info
 }

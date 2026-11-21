@@ -475,6 +475,8 @@ type oracleScraper struct {
 	// All fields are best-effort: detection failures are logged and leave the
 	// field at its zero value; they never prevent the receiver from starting.
 	instanceInfo oracleInstanceInfo
+	// roleRefreshFailing is true while the per-scrape role query keeps failing.
+	roleRefreshFailing bool
 }
 
 func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName, hostName string, dbCleanup func()) (scraper.Metrics, error) {
@@ -640,6 +642,9 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 
 func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.logger.Debug("Begin scrape")
+
+	// Read once, before the collection, so the resource reports the role the metrics were read under.
+	info := s.currentInstanceInfo(ctx, s.metricsBuilderConfig.ResourceAttributes)
 
 	var scrapeErrors []error
 
@@ -1369,7 +1374,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.collectASMDiskMetrics(ctx, &scrapeErrors)
 	s.collectSysMetrics(ctx, &scrapeErrors)
 
-	rb := s.setupResourceBuilder(s.mb.NewResourceBuilder())
+	rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), info)
 
 	out := s.mb.Emit(metadata.WithResource(rb.Emit()))
 	s.logger.Debug("Done scraping")
@@ -1967,13 +1972,27 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 	logs := plog.NewLogs()
 	var scrapeErrors []error
 
+	// Which interval-gated collectors run is decided once, so that the role is read exactly when
+	// a collector will use it.
+	topQueryDue := s.logsBuilderConfig.Events.DbServerTopQuery.Enabled &&
+		collectionIntervalElapsed(s.lastExecutionTimestamp, s.topQueryCollectCfg.CollectionInterval)
+	topProcedureDue := s.logsBuilderConfig.Events.DbServerTopProcedure.Enabled &&
+		collectionIntervalElapsed(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval)
+
+	// Read once for all collectors of this scrape, and only when one of them will run.
+	var info oracleInstanceInfo
+	if topQueryDue || s.logsBuilderConfig.Events.DbServerQuerySample.Enabled ||
+		s.logsBuilderConfig.Events.DbServerSessionWaitSample.Enabled || topProcedureDue {
+		info = s.currentInstanceInfo(ctx, s.logsBuilderConfig.ResourceAttributes)
+	}
+
 	if s.logsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		currentCollectionTime := time.Now()
-		if !collectionIntervalElapsed(s.lastExecutionTimestamp, s.topQueryCollectCfg.CollectionInterval) {
+		if !topQueryDue {
 			s.logger.Debug("Skipping the collection of top queries because collection interval has not yet elapsed.")
 		} else {
 			lookbackTimeCounter := calculateLookbackSeconds(s.lastExecutionTimestamp, s.topQueryCollectCfg.CollectionInterval)
-			topNCollectionErrors := s.collectTopNMetricData(ctx, logs, currentCollectionTime, lookbackTimeCounter)
+			topNCollectionErrors := s.collectTopNMetricData(ctx, logs, info, currentCollectionTime, lookbackTimeCounter)
 			if topNCollectionErrors != nil {
 				scrapeErrors = append(scrapeErrors, topNCollectionErrors)
 			}
@@ -1982,14 +2001,14 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 	}
 
 	if s.logsBuilderConfig.Events.DbServerQuerySample.Enabled {
-		samplesCollectionErrors := s.collectQuerySamples(ctx, logs)
+		samplesCollectionErrors := s.collectQuerySamples(ctx, logs, info)
 		if samplesCollectionErrors != nil {
 			scrapeErrors = append(scrapeErrors, samplesCollectionErrors)
 		}
 	}
 
 	if s.logsBuilderConfig.Events.DbServerSessionWaitSample.Enabled {
-		sessionEventErrors := s.collectSessionWaitEvents(ctx, logs)
+		sessionEventErrors := s.collectSessionWaitEvents(ctx, logs, info)
 		if sessionEventErrors != nil {
 			scrapeErrors = append(scrapeErrors, sessionEventErrors)
 		}
@@ -1997,11 +2016,11 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 
 	if s.logsBuilderConfig.Events.DbServerTopProcedure.Enabled {
 		currentCollectionTime := time.Now()
-		if !collectionIntervalElapsed(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval) {
+		if !topProcedureDue {
 			s.logger.Debug("Skipping the collection of procedure metrics because collection interval has not yet elapsed.")
 		} else {
 			lookbackTimeCounter := calculateLookbackSeconds(s.lastProcedureMetricsTimestamp, s.procedureMetricsCfg.CollectionInterval)
-			procedureCollectionErrors := s.collectProcedureMetrics(ctx, logs, currentCollectionTime, lookbackTimeCounter)
+			procedureCollectionErrors := s.collectProcedureMetrics(ctx, logs, info, currentCollectionTime, lookbackTimeCounter)
 			if procedureCollectionErrors != nil {
 				scrapeErrors = append(scrapeErrors, procedureCollectionErrors)
 			}
@@ -2038,7 +2057,7 @@ func removeQueryPlanFromTopQuery(logs plog.Logs) {
 	}
 }
 
-func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Logs, collectionTime time.Time, lookbackTimeSeconds int) error {
+func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Logs, info oracleInstanceInfo, collectionTime time.Time, lookbackTimeSeconds int) error {
 	var errs []error
 	// get metrics and query texts from DB
 	s.oracleQueryMetricsClient = s.clientProviderFunc(s.db, s.buildTopQuerySQL(), s.logger)
@@ -2151,7 +2170,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 		errs = append(errs, err)
 	}
 
-	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder())
+	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder(), info)
 
 	for i := range hits {
 		hit := &hits[i]
@@ -2247,7 +2266,7 @@ func getProcedureMetricNames() []string {
 	return append(getProcedureResourceMetricNames(), queryExecutionMetric)
 }
 
-func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.Logs, collectionTime time.Time, lookbackTimeSeconds int) error {
+func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.Logs, info oracleInstanceInfo, collectionTime time.Time, lookbackTimeSeconds int) error {
 	var errs []error
 	// Pool is wider than the reported set: ranking happens below over deltas, not over lifetime totals in SQL.
 	s.oracleProcedureMetricsClient = s.clientProviderFunc(s.db, s.buildProcedureMetricsSQL(), s.logger)
@@ -2345,7 +2364,7 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 	maxHitsSize := min(len(hits), int(s.procedureMetricsCfg.TopProcedureCount))
 	hits = hits[:maxHitsSize]
 
-	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder())
+	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder(), info)
 
 	for i := range hits {
 		hit := &hits[i]
@@ -2378,7 +2397,7 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 	return errors.Join(errs...)
 }
 
-func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs) error {
+func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs, info oracleInstanceInfo) error {
 	const action = "ACTION"
 	const duration = "DURATION_SEC"
 	const event = "EVENT"
@@ -2436,7 +2455,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 		scrapeErrors = append(scrapeErrors, err)
 	}
 
-	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder())
+	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder(), info)
 
 	for _, row := range rows {
 		if row[sqlText] == "" {
@@ -2564,7 +2583,7 @@ func (s *oracleScraper) enrichSamplesWithSQLStats(ctx context.Context, rows []me
 	return nil
 }
 
-func (s *oracleScraper) collectSessionWaitEvents(ctx context.Context, logs plog.Logs) error {
+func (s *oracleScraper) collectSessionWaitEvents(ctx context.Context, logs plog.Logs, info oracleInstanceInfo) error {
 	const sid = "SID"
 	const serial = "SERIAL#"
 	const event = "EVENT"
@@ -2582,7 +2601,7 @@ func (s *oracleScraper) collectSessionWaitEvents(ctx context.Context, logs plog.
 		scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", sessionEventQuery, err))
 	}
 
-	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder())
+	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder(), info)
 
 	for _, row := range rows {
 		totalWaitsVal, err := strconv.ParseInt(row[totalWaits], 10, 64)
@@ -2690,7 +2709,9 @@ func (s *oracleScraper) shutdown(_ context.Context) error {
 	return s.db.Close()
 }
 
-func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *metadata.ResourceBuilder {
+// setupResourceBuilder fills the resource attributes shared by metrics and logs from info,
+// which the caller took from currentInstanceInfo once for the whole scrape.
+func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder, info oracleInstanceInfo) *metadata.ResourceBuilder {
 	rb.SetOracledbInstanceName(s.instanceName)
 	rb.SetHostName(s.hostName)
 	rb.SetServiceInstanceID(s.serviceInstanceID)
@@ -2706,20 +2727,20 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	}
 	rb.SetServerPort(serverPort)
 
-	if s.instanceInfo.dbVersion != "" {
-		rb.SetOracleDbVersion(s.instanceInfo.dbVersion)
+	if info.dbVersion != "" {
+		rb.SetOracleDbVersion(info.dbVersion)
 	}
-	if s.instanceInfo.dbEdition != "" {
-		rb.SetOracleDbEdition(s.instanceInfo.dbEdition)
+	if info.dbEdition != "" {
+		rb.SetOracleDbEdition(info.dbEdition)
 	}
-	if s.instanceInfo.databaseRole != "" {
-		rb.SetOracleDbRole(s.instanceInfo.databaseRole)
+	if info.databaseRole != "" {
+		rb.SetOracleDbRole(info.databaseRole)
 	}
-	if s.instanceInfo.openMode != "" {
-		rb.SetOracleDbOpenMode(s.instanceInfo.openMode)
+	if info.openMode != "" {
+		rb.SetOracleDbOpenMode(info.openMode)
 	}
-	if s.instanceInfo.hostingType != "" {
-		rb.SetOracleDbHostingType(s.instanceInfo.hostingType)
+	if info.hostingType != "" {
+		rb.SetOracleDbHostingType(info.hostingType)
 	}
 	return rb
 }
